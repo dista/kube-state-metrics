@@ -32,6 +32,10 @@ import (
 	"k8s.io/kubernetes/pkg/util/node"
 )
 
+const (
+	nvidiaGpu = "nvidia.com/gpu"
+)
+
 // TODO: Can't we use const instead?
 var (
 	descPodLabelsName          = "kube_pod_labels"
@@ -173,6 +177,12 @@ var (
 		append(descPodLabelsDefaultLabels, "container", "node"),
 		nil,
 	)
+	descPodContainerResourceRequestsGPUCards = metrics.NewMetricFamilyDef(
+		"kube_pod_container_resource_requests_gpu_cards",
+		"The number of requested gpu cards by a container.",
+		append(descPodLabelsDefaultLabels, "container", "node"),
+		nil,
+	)
 	descPodContainerResourceRequestsMemoryBytes = metrics.NewMetricFamilyDef(
 		"kube_pod_container_resource_requests_memory_bytes",
 		"The number of requested memory bytes by a container.",
@@ -182,6 +192,12 @@ var (
 	descPodContainerResourceLimitsCPUCores = metrics.NewMetricFamilyDef(
 		"kube_pod_container_resource_limits_cpu_cores",
 		"The limit on cpu cores to be used by a container.",
+		append(descPodLabelsDefaultLabels, "container", "node"),
+		nil,
+	)
+	descPodContainerResourceLimitsGPUCards = metrics.NewMetricFamilyDef(
+		"kube_pod_container_resource_limits_gpu_cards",
+		"The limit on gpu cards to be used by a container.",
 		append(descPodLabelsDefaultLabels, "container", "node"),
 		nil,
 	)
@@ -407,6 +423,10 @@ func generatePodMetrics(disablePodNonGenericResourceMetrics bool, obj interface{
 				addGauge(descPodContainerResourceRequestsCPUCores, float64(cpu.MilliValue())/1000,
 					c.Name, nodeName)
 			}
+			if gpu, ok := req[nvidiaGpu]; ok {
+				addGauge(descPodContainerResourceRequestsGPUCards, float64(gpu.Value()),
+					c.Name, nodeName)
+			}
 			if mem, ok := req[v1.ResourceMemory]; ok {
 				addGauge(descPodContainerResourceRequestsMemoryBytes, float64(mem.Value()),
 					c.Name, nodeName)
@@ -416,7 +436,10 @@ func generatePodMetrics(disablePodNonGenericResourceMetrics bool, obj interface{
 				addGauge(descPodContainerResourceLimitsCPUCores, float64(cpu.MilliValue())/1000,
 					c.Name, nodeName)
 			}
-
+			if gpu, ok := lim[nvidiaGpu]; ok {
+				addGauge(descPodContainerResourceLimitsGPUCards, float64(gpu.Value()),
+					c.Name, nodeName)
+			}
 			if mem, ok := lim[v1.ResourceMemory]; ok {
 				addGauge(descPodContainerResourceLimitsMemoryBytes, float64(mem.Value()),
 					c.Name, nodeName)
