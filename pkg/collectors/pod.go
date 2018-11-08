@@ -174,37 +174,37 @@ var (
 	descPodContainerResourceRequestsCPUCores = metrics.NewMetricFamilyDef(
 		"kube_pod_container_resource_requests_cpu_cores",
 		"The number of requested cpu cores by a container.",
-		append(descPodLabelsDefaultLabels, "container", "node"),
+		append(descPodLabelsDefaultLabels, "container", "node", "phase"),
 		nil,
 	)
 	descPodContainerResourceRequestsGPUCards = metrics.NewMetricFamilyDef(
 		"kube_pod_container_resource_requests_gpu_cards",
 		"The number of requested gpu cards by a container.",
-		append(descPodLabelsDefaultLabels, "container", "node"),
+		append(descPodLabelsDefaultLabels, "container", "node", "phase"),
 		nil,
 	)
 	descPodContainerResourceRequestsMemoryBytes = metrics.NewMetricFamilyDef(
 		"kube_pod_container_resource_requests_memory_bytes",
 		"The number of requested memory bytes by a container.",
-		append(descPodLabelsDefaultLabels, "container", "node"),
+		append(descPodLabelsDefaultLabels, "container", "node", "phase"),
 		nil,
 	)
 	descPodContainerResourceLimitsCPUCores = metrics.NewMetricFamilyDef(
 		"kube_pod_container_resource_limits_cpu_cores",
 		"The limit on cpu cores to be used by a container.",
-		append(descPodLabelsDefaultLabels, "container", "node"),
+		append(descPodLabelsDefaultLabels, "container", "node", "phase"),
 		nil,
 	)
 	descPodContainerResourceLimitsGPUCards = metrics.NewMetricFamilyDef(
 		"kube_pod_container_resource_limits_gpu_cards",
 		"The limit on gpu cards to be used by a container.",
-		append(descPodLabelsDefaultLabels, "container", "node"),
+		append(descPodLabelsDefaultLabels, "container", "node", "phase"),
 		nil,
 	)
 	descPodContainerResourceLimitsMemoryBytes = metrics.NewMetricFamilyDef(
 		"kube_pod_container_resource_limits_memory_bytes",
 		"The limit on memory to be used by a container in bytes.",
-		append(descPodLabelsDefaultLabels, "container", "node"),
+		append(descPodLabelsDefaultLabels, "container", "node", "phase"),
 		nil,
 	)
 	descPodSpecVolumesPersistentVolumeClaimsInfo = metrics.NewMetricFamilyDef(
@@ -421,28 +421,28 @@ func generatePodMetrics(disablePodNonGenericResourceMetrics bool, obj interface{
 
 			if cpu, ok := req[v1.ResourceCPU]; ok {
 				addGauge(descPodContainerResourceRequestsCPUCores, float64(cpu.MilliValue())/1000,
-					c.Name, nodeName)
+					c.Name, nodeName, string(p.Status.Phase))
 			}
 			if gpu, ok := req[nvidiaGpu]; ok {
 				addGauge(descPodContainerResourceRequestsGPUCards, float64(gpu.Value()),
-					c.Name, nodeName)
+					c.Name, nodeName, string(p.Status.Phase))
 			}
 			if mem, ok := req[v1.ResourceMemory]; ok {
 				addGauge(descPodContainerResourceRequestsMemoryBytes, float64(mem.Value()),
-					c.Name, nodeName)
+					c.Name, nodeName, string(p.Status.Phase))
 			}
 
 			if cpu, ok := lim[v1.ResourceCPU]; ok {
 				addGauge(descPodContainerResourceLimitsCPUCores, float64(cpu.MilliValue())/1000,
-					c.Name, nodeName)
+					c.Name, nodeName, string(p.Status.Phase))
 			}
 			if gpu, ok := lim[nvidiaGpu]; ok {
 				addGauge(descPodContainerResourceLimitsGPUCards, float64(gpu.Value()),
-					c.Name, nodeName)
+					c.Name, nodeName, string(p.Status.Phase))
 			}
 			if mem, ok := lim[v1.ResourceMemory]; ok {
 				addGauge(descPodContainerResourceLimitsMemoryBytes, float64(mem.Value()),
-					c.Name, nodeName)
+					c.Name, nodeName, string(p.Status.Phase))
 			}
 		}
 	}
