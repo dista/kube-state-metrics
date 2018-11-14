@@ -40,7 +40,7 @@ const (
 var (
 	descPodLabelsName          = "kube_pod_labels"
 	descPodLabelsHelp          = "Kubernetes labels converted to Prometheus labels."
-	descPodLabelsDefaultLabels = []string{"namespace", "pod"}
+	descPodLabelsDefaultLabels = []string{"namespace", "pod", "taskid", "subtaskid"}
 	containerWaitingReasons    = []string{"ContainerCreating", "CrashLoopBackOff", "CreateContainerConfigError", "ErrImagePull", "ImagePullBackOff"}
 	containerTerminatedReasons = []string{"OOMKilled", "Completed", "Error", "ContainerCannotRun"}
 
@@ -276,6 +276,21 @@ func podLabelsDesc(labelKeys []string) *metrics.MetricFamilyDef {
 	)
 }
 
+func getExtraValues(p *v1.Pod) []string {
+	taskid := ""
+	subtaskid := ""
+
+	if v, ok := p.Labels["taskid"]; ok {
+		taskid = v
+	}
+
+	if v, ok := p.Labels["subtaskid"]; ok {
+		subtaskid = v
+	}
+
+	return []string{taskid, subtaskid}
+}
+
 func generatePodMetrics(disablePodNonGenericResourceMetrics bool, obj interface{}) []*metrics.Metric {
 	ms := []*metrics.Metric{}
 
@@ -283,9 +298,12 @@ func generatePodMetrics(disablePodNonGenericResourceMetrics bool, obj interface{
 	pPointer := obj.(*v1.Pod)
 	p := *pPointer
 
+	extraValues := getExtraValues(pPointer)
+	extraValues = append([]string{p.Namespace, p.Name}, extraValues...)
+
 	nodeName := p.Spec.NodeName
 	addConstMetric := func(desc *metrics.MetricFamilyDef, v float64, lv ...string) {
-		lv = append([]string{p.Namespace, p.Name}, lv...)
+		lv = append(extraValues, lv...)
 
 		m, err := metrics.NewMetric(desc.Name, desc.LabelKeys, lv, v)
 		if err != nil {
@@ -352,9 +370,9 @@ func generatePodMetrics(disablePodNonGenericResourceMetrics bool, obj interface{
 	for _, c := range p.Status.Conditions {
 		switch c.Type {
 		case v1.PodReady:
-			ms = append(ms, addConditionMetrics(descPodStatusReady, c.Status, p.Namespace, p.Name)...)
+			ms = append(ms, addConditionMetrics(descPodStatusReady, c.Status, extraValues...)...)
 		case v1.PodScheduled:
-			ms = append(ms, addConditionMetrics(descPodStatusScheduled, c.Status, p.Namespace, p.Name)...)
+			ms = append(ms, addConditionMetrics(descPodStatusScheduled, c.Status, extraValues...)...)
 			if c.Status == v1.ConditionTrue {
 				addGauge(descPodStatusScheduledTime, float64(c.LastTransitionTime.Unix()))
 			}
